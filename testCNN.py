@@ -18,6 +18,8 @@ import random
 
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
+from sklearn.model_selection import train_test_split
+
 
 #MyDataset takes a bool argument to know if it is a train dataset or a test dataset
 
@@ -135,7 +137,7 @@ class Net(nn.Module):
     
         
         
-        x = F.sigmoid(x)
+        x = F.softmax(x, dim=1)
 
         return x
 
@@ -161,7 +163,9 @@ def train(model, device, train_loader, optimizer, epoch, criterion):
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
-        output = model(data)
+        output = model(data).argmax(dim=1)
+        print("output : ", output, "target : ", target)
+        print("output type : ", type(output), "target type : ", type(target))
         loss = criterion(output, target)
         optimizer.step()
         if batch_idx % 100 == 0:
@@ -177,7 +181,7 @@ def test(model, device, test_loader, criterion):
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            output = model(data)
+            output = model(data).argmax()
             print("output : ", output, "target : ", target)
             test_loss += criterion(output, target).item()
             pred = output.argmax(dim=1, keepdim=True)
@@ -190,14 +194,31 @@ def test(model, device, test_loader, criterion):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_dataset = MyDataset("/home/hugo/Bureau/ARTICPROJECT/CNNMove/test/MucaMoveDataset/dataset ",True)
-    test_dataset = MyDataset("/home/hugo/Bureau/ARTICPROJECT/CNNMove/test/MucaMoveDataset/dataset ",False)
+    train_dataset = MyDataset("/Users/hugo/ArcticProject/CNNMOVE/MucaMoveDataset/dataset ",True)
+    test_dataset = MyDataset("/Users/hugo/ArcticProject/CNNMOVE/MucaMoveDataset/dataset ",False)
     train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=4, drop_last=True)
     test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=4, drop_last=True)
-    for i,v in enumerate(train_loader):
-        print("train : ", v[1])
+    # for i,v in enumerate(train_loader):
+    
+    #     print("train : ", v[1])
+    t = {0:0,1:0,2:0,3:0,4:0}
+
     for i,v in enumerate(test_loader):
-        print("test: ", v[1])
+        print(v[1])
+        v=list(v[1])
+        for i in v: 
+            
+            if i == 0:
+                t[0] += 1
+            elif i == 1:
+                t[1] += 1
+            elif i == 2:
+                t[2] += 1
+            elif i == 3:
+                t[3] += 1
+            elif i == 4:
+                t[4] += 1
+    print("##################################### ---> ",t)
     model = Net().to(device)
     criterion = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
